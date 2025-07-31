@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>DAO UI</title>
+</head>
+
+<body>
+  <h1>DAO Interaction</h1>
+  <button onclick="connectWallet()">Cüzdan Bağla</button>
+  <p id="walletAddress"></p>
+
+  <h2>Kayıt Ol</h2>
+  <button onclick="registerAsDonor()">Donor Ol</button>
+  <input id="energyNeed" placeholder="Enerji ihtiyacı (watt)">
+  <button onclick="registerAsDonee()">Donee Ol</button>
+
+  <h2>Bağış Yap</h2>
+  <input id="doneeAddrDonate" placeholder="Donee Adresi">
+  <input id="energyAmount" placeholder="Enerji Miktarı (watt)">
+  <button onclick="donateEnergy()">Enerji Bağışla</button>
+
+  <h2>Oy Ver</h2>
+  <input id="doneeAddrVote" placeholder="Donee Adresi">
+  <input id="voteAmount" placeholder="Enerji Miktarı (watt)">
+  <select id="voteSupport">
+    <option value="true">Evet</option>
+    <option value="false">Hayır</option>
+  </select>
+  <button onclick="voteOnDonee()">Oy Ver</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <script>
+    const DAO_ADDRESS = "0x78E41A35f59450D3498F963bcd93c987ffb9f1F6";
+    const DAO_ABI = [
+      { "inputs": [], "name": "registerAsDonor", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [{ "internalType": "uint256", "name": "_energyNeed", "type": "uint256" }], "name": "registerAsDonee", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [{ "internalType": "address", "name": "_donee", "type": "address" }, { "internalType": "bool", "name": "_support", "type": "bool" }, { "internalType": "uint256", "name": "_amount", "type": "uint256" }], "name": "voteOnDonee", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [{ "internalType": "address", "name": "_donee", "type": "address" }, { "internalType": "uint256", "name": "_amount", "type": "uint256" }], "name": "donateEnergy", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
+    ];
+
+    let provider, signer, dao;
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("MetaMask gerekli");
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      dao = new ethers.Contract(DAO_ADDRESS, DAO_ABI, signer);
+      const address = await signer.getAddress();
+      document.getElementById("walletAddress").innerText = address;
+    }
+
+    async function registerAsDonor() {
+      const tx = await dao.registerAsDonor();
+      await tx.wait();
+      alert("Donor olarak kayıt oldunuz");
+    }
+
+    async function registerAsDonee() {
+      const energyNeed = document.getElementById("energyNeed").value;
+      const tx = await dao.registerAsDonee(energyNeed);
+      await tx.wait();
+      alert("Donee olarak kayıt oldunuz");
+    }
+
+    async function donateEnergy() {
+      const toDonee = document.getElementById("doneeAddrDonate").value;
+      const watt = document.getElementById("energyAmount").value;
+      const tx = await dao.donateEnergy(toDonee, watt);
+      await tx.wait();
+      alert("Enerji bağışlandı");
+    }
+
+    async function voteOnDonee() {
+      const donee = document.getElementById("doneeAddrVote").value;
+      const support = document.getElementById("voteSupport").value === "true";
+      const amount = document.getElementById("voteAmount").value;
+      const tx = await dao.voteOnDonee(donee, support, amount);
+      await tx.wait();
+      alert("Oy verildi");
+    }
+  </script>
+</body>
+
+</html>
